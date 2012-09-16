@@ -4,4 +4,7 @@
 *.jar
 *.war
 *.ear
+<<<<<<< HEAD
 *.log
+=======
+>>>>>>> a8cba189b07bade420e4d91bdafb09c498a767e9
