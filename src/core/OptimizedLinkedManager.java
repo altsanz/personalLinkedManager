@@ -25,7 +25,6 @@ public class OptimizedLinkedManager {
 			serverSocket = new ServerSocket(PORT);
 			while (true) {
 				log.log("Main - Esperando una petición de conexión de una tablet.");
-				serverSocket = null;
 				tabletSocket = serverSocket.accept(); // Waits for a connection
 														// request
 				log.log("Main - Petición de conexión recibida.");
@@ -35,7 +34,6 @@ public class OptimizedLinkedManager {
 		} catch (Exception e) {
 			log.log("Main - Error en el bucle para aceptar conexiones.");
 			log.log(e.getStackTrace());
-			e.printStackTrace();
 		}
 	}
 

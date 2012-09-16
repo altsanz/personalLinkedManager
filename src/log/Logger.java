@@ -62,6 +62,7 @@ public class Logger {
 				System.out.print(temp);
 				fileOut.write(temp);
 				fileOut.flush();
+				System.out.println(stElement.toString());
 			}
 
 			return true;
