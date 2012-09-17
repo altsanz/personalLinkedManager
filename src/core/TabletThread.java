@@ -9,9 +9,11 @@ import java.net.Socket;
 
 import com.google.gson.Gson;
 
-import log.Logger;
-import serialization.MessageToTablet;
+import enums.ReturnStates;
 
+import log.Logger;
+import serialization.MessageFromTablet;
+import serialization.MessageToTablet;
 
 /**
  * Thread that has a socket associated and controls its inputs and outputs.
@@ -23,36 +25,46 @@ public class TabletThread implements Runnable {
 
 	private static final int BUFFER_LENGTH = 1024;
 
-	Logger log = null;
-	Socket tabletSocket = null;
-	Gson gson = null;
-	BufferedReader in = null;
-	BufferedWriter out = null;
-	char bRecv[] = null;
-	StringBuffer sb = null;
+	private Logger log = null;
+	private Socket tabletSocket = null;
+	private Gson gson = null;
+	private BufferedReader in = null;
+	private BufferedWriter out = null;
+	private char bRecv[] = null;
+	private StringBuffer sb = null;
+	private OnThreadQuery listener;
 
-
-
-	
 	public TabletThread(Socket socket) {
 		this.tabletSocket = socket;
 		log = Logger.getInstance();
 	}
-	
+
+	public void setListener(OnThreadQuery listener) {
+		this.listener = listener;
+	}
+
 	@Override
 	public void run() {
-		String inputLine = null;
+		MessageFromTablet messageFromTabletAux = null;
 		gson = new Gson();
 		log.log("Hijo - Thread lanzado con éxito");
 		try {
+			in = new BufferedReader(new InputStreamReader(
+					tabletSocket.getInputStream()));
 			out = new BufferedWriter(new PrintWriter(
 					tabletSocket.getOutputStream()));
-			inputLine = readData(tabletSocket);
+			while (true) {
+				// Reads data
+				messageFromTabletAux = readData(tabletSocket);
+				// Gives data to the main thread
+				listener.msgPipe(this, messageFromTabletAux);
+			}
+
 		} catch (IOException e) {
 			log.log(e.getStackTrace());
 		}
 	}
-	
+
 	/**
 	 * Reads data from the socket and return a string with the JSon.
 	 * 
@@ -64,13 +76,12 @@ public class TabletThread implements Runnable {
 	 *            Socket connected to the tablet.
 	 * @return String - Prepared to be JSonized.
 	 */
-	public String readData(Socket tabletSocket) {
+	public MessageFromTablet readData(Socket tabletSocket) {
 		int numBytesRecv = 0;
+		MessageFromTablet messageFromTabletAux = null;
 		String inputLine = new String();
 		bRecv = new char[BUFFER_LENGTH];
 		try {
-			in = new BufferedReader(new InputStreamReader(
-					tabletSocket.getInputStream()));
 			sb = new StringBuffer(); // Buffer where concatenate Strings
 										// received
 			while ((numBytesRecv = in.read(bRecv)) == BUFFER_LENGTH) {
@@ -84,10 +95,13 @@ public class TabletThread implements Runnable {
 		}
 		inputLine = sb.toString();
 		log.log("Hijo - Mensaje recibido:\n" + inputLine);
-		return inputLine;
+		// Deserialize the String received
+		messageFromTabletAux = gson
+				.fromJson(inputLine, MessageFromTablet.class);
+		log.log("Hijo - Mensaje deserializado correctamente.\n");
+		return messageFromTabletAux;
 	}
-	
-	
+
 	public void sendData(MessageToTablet messageToTablet) {
 		String outputLine = new String();
 		try {
@@ -98,7 +112,7 @@ public class TabletThread implements Runnable {
 			out.write(outputLine.toCharArray());
 			out.newLine();
 			out.flush();
-			
+
 			log.log("Hijo - Enviado" + messageToTablet);
 		} catch (IOException e) {
 			log.log(e.getStackTrace());

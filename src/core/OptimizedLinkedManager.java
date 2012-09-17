@@ -2,12 +2,20 @@ package core;
 
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.HashMap;
+
+import enums.TabletStates;
+import enums.TabletTypes;
+
+import serialization.MessageFromTablet;
+import serialization.MessageToTablet;
 
 import log.Logger;
 
-public class OptimizedLinkedManager {
+public class OptimizedLinkedManager implements OnThreadQuery {
 	private static final int PORT = 12347;
-	Logger log = null;
+	private Logger log = null;
+	private HashMap<TabletTypes, InfoTablet> relTabletInfo;
 
 	public OptimizedLinkedManager() {
 		// Inicializamos el objeto para hacer el log.
@@ -20,7 +28,7 @@ public class OptimizedLinkedManager {
 		Socket tabletSocket = null;
 		ServerSocket serverSocket = null;
 		TabletThread tAux = null;
-
+		initRelTabletInfo();
 		try {
 			serverSocket = new ServerSocket(PORT);
 			while (true) {
@@ -29,6 +37,7 @@ public class OptimizedLinkedManager {
 														// request
 				log.log("Main - Petición de conexión recibida.");
 				tAux = new TabletThread(tabletSocket);
+				tAux.setListener(this);
 				new Thread(tAux).start();
 			}
 		} catch (Exception e) {
@@ -37,9 +46,42 @@ public class OptimizedLinkedManager {
 		}
 	}
 
+	private void initRelTabletInfo() {
+		relTabletInfo = new HashMap<TabletTypes, InfoTablet>();
+		for (TabletTypes tabletType : TabletTypes.values()) {
+			relTabletInfo.put(tabletType, null);
+		}
+		log.log("Main - Relación entre tablets y su info inicializada");
+	}
+
 	public static void main(String[] args) {
 		(new OptimizedLinkedManager()).startManager();
 
+	}
+
+	@Override
+	public synchronized MessageToTablet msgPipe(TabletThread thread,
+			MessageFromTablet messageFromTabletAux) {
+		try {
+			// TODO
+			switch (messageFromTabletAux.getAction()) {
+			case IDENTIFICAR:
+				// Creamos el infoTablet que se va a asociar al color.
+				InfoTablet infoTabletAux = new InfoTablet(
+						TabletStates.DISABLED, thread);
+				// Lo añadimos a la relación.
+				relTabletInfo.put(messageFromTabletAux.getColor(),
+						infoTabletAux);
+				log.log("Main - Tablet " + messageFromTabletAux.getColor()
+						+ " ha sido identificada con éxito.");
+				break;
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+			log.log("Main - Error en msgPipe()");
+			log.log(e.getStackTrace());
+		}
+		return null;
 	}
 
 }

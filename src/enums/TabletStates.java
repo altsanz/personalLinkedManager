@@ -7,5 +7,5 @@ package enums;
  * 
  */
 public enum TabletStates {
-	DISABLED, NOT_READY, READY
+	DISABLED, WRITTING_INICI_FRASE, COMPLETED_INICI_FRASE, FINISHING,
 }
