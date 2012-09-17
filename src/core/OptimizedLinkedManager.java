@@ -63,17 +63,37 @@ public class OptimizedLinkedManager implements OnThreadQuery {
 	public synchronized MessageToTablet msgPipe(TabletThread thread,
 			MessageFromTablet messageFromTabletAux) {
 		try {
+			InfoTablet infoTabletAux = null;
 			// TODO
 			switch (messageFromTabletAux.getAction()) {
 			case IDENTIFICAR:
+				log.log("Main - Recibido un "
+						+ messageFromTabletAux.getAction() + " de "
+						+ messageFromTabletAux.getColor());
 				// Creamos el infoTablet que se va a asociar al color.
-				InfoTablet infoTabletAux = new InfoTablet(
+				infoTabletAux = new InfoTablet(
 						TabletStates.DISABLED, thread);
 				// Lo añadimos a la relación.
 				relTabletInfo.put(messageFromTabletAux.getColor(),
 						infoTabletAux);
 				log.log("Main - Tablet " + messageFromTabletAux.getColor()
 						+ " ha sido identificada con éxito.");
+				break;
+			case ACTIVAR:
+				log.log("Main - Recibido un " + messageFromTabletAux.getAction() + " de "
+						+ messageFromTabletAux.getColor());
+				if ((infoTabletAux = relTabletInfo.get(messageFromTabletAux.getColor())) != null) {
+					infoTabletAux.setState(TabletStates.WRITTING_INICI_FRASE);
+					relTabletInfo.put(messageFromTabletAux.getColor(), infoTabletAux);
+					log.log("Main - Tablet " + messageFromTabletAux.getColor()
+						+ " ha comenzado a jugar.");
+				} else {
+					log.log("Main - WARNING! La acción "
+							+ messageFromTabletAux.getAction()
+							+ " de "
+							+ messageFromTabletAux.getColor()
+							+ " no se ha podido procesar porque no está identificado.");
+				}
 				break;
 			}
 		} catch (Exception e) {
@@ -83,5 +103,4 @@ public class OptimizedLinkedManager implements OnThreadQuery {
 		}
 		return null;
 	}
-
 }

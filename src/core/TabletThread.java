@@ -98,7 +98,7 @@ public class TabletThread implements Runnable {
 		// Deserialize the String received
 		messageFromTabletAux = gson
 				.fromJson(inputLine, MessageFromTablet.class);
-		log.log("Hijo - Mensaje deserializado correctamente.\n");
+		log.log("Hijo - Mensaje deserializado correctamente.");
 		return messageFromTabletAux;
 	}
 
