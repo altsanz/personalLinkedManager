@@ -36,6 +36,7 @@ public class FirebrainThread extends Thread {
 	Gson gson = new Gson();
 
 	Map<String, String> msg = new HashMap<String, String>();
+	Map<String, FirebrainZones> relConnZones = new HashMap<String, FirebrainZones>();
 
 	public FirebrainThread() {
 	
@@ -43,13 +44,18 @@ public class FirebrainThread extends Thread {
 
 	@Override
 	public void run() {
+		relConnZones = new HashMap<String, FirebrainZones>();
+		relConnZones.put(TabletTypes.R.toString()+ TabletTypes.G.toString(), FirebrainZones.Y);
+		relConnZones.put(TabletTypes.G.toString()+ TabletTypes.R.toString(), FirebrainZones.Y);
+		relConnZones.put(TabletTypes.G.toString()+ TabletTypes.B.toString(), FirebrainZones.C);
+		relConnZones.put(TabletTypes.B.toString()+ TabletTypes.G.toString(), FirebrainZones.C);
+		relConnZones.put(TabletTypes.B.toString()+ TabletTypes.R.toString(), FirebrainZones.P);
+		relConnZones.put(TabletTypes.R.toString()+ TabletTypes.B.toString(), FirebrainZones.P);
 		try {
 			System.out.println("Firebrain socket launched.");
 			fireBrainSocket = new Socket("192.168.0.202", port);
 			fbOut = new BufferedWriter(new PrintWriter(
 					fireBrainSocket.getOutputStream(), true));
-			if (!waitForACK())
-				System.out.println("Last packet returned errors");
 
 			while(true){
 				Thread.sleep(100);
@@ -67,7 +73,6 @@ public class FirebrainThread extends Thread {
 				System.out.println(e.getMessage());
 			}
 		} catch (InterruptedException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		} finally {
 		
@@ -75,13 +80,13 @@ public class FirebrainThread extends Thread {
 
 	}
 
-	public synchronized void sendAction(FireBrainActions action, TabletTypes tablet, FirebrainZones connection) {
+	public synchronized void sendAction(FireBrainActions action, TabletTypes tabletA, TabletTypes tabletB) {
 		String json = "";
 		msg = new HashMap<String, String>();
 		switch(action) {
 		case LightsOn:
 			msg.put("function", FireBrainActions.LightsOn.toString());
-			msg.put("zone", tablet.toString());
+			msg.put("zone", tabletA.toString());
 			break;
 		case LightsAll:
 			msg = new HashMap<String, String>();
@@ -93,11 +98,12 @@ public class FirebrainThread extends Thread {
 			break;
 		case LightsConnection:
 			msg.put("function", FireBrainActions.LightsConnection.toString());
-			msg.put("zone", tablet.toString());
+			FirebrainZones connection = relConnZones.get(tabletA.toString()+tabletB.toString());
+			msg.put("zone", connection.toString());
 			break;
 		case LightsOff:
 			msg.put("function", FireBrainActions.LightsOff.toString());
-			msg.put("zone", tablet.toString());
+			msg.put("zone", tabletA.toString());
 			break;
 		}
 		json = gson.toJson(msg);
@@ -108,43 +114,13 @@ public class FirebrainThread extends Thread {
 	 * Reads answer message from Firebrain Socket and returns a boolean depending of the state, { OK, KO }
 	 * @return Bool { OK = true, KO = false }
 	 */
-	public boolean waitForACK() {
-		int numBytesRecv = 0;
-		String inputLine = "";
-		try {
-			fbIn = new BufferedReader(new InputStreamReader(
-					fireBrainSocket.getInputStream()));
-			StringBuffer sb = new StringBuffer(); // Buffer where concatenate
-													// Strings received
-			while ((numBytesRecv = fbIn.read(bRecv)) == BUFFER_LENGTH) {
-				sb.append(bRecv);
-			}
-			sb.append(bRecv, 0, numBytesRecv);
-			inputLine = sb.toString();
-			inputLine = gson.fromJson(inputLine, String.class); // Deserialization
-			System.out.println(inputLine);
-			return inputLine.equals("OK");
-		} catch (Exception e) {
-			System.out.println(e.getMessage());
-			return false;
-		}
-	}
+
 	/**
 	 * Initializes relation between 2 {@link TabletTypes} and its connected zone {@link FirebrainZones}.
 	 * @return
 	 */
-	public Map<String, FirebrainZones> initRelConnZones() {
-		Map<String, FirebrainZones> relConnZones = new HashMap<String, FirebrainZones>();
-		relConnZones.put(TabletTypes.R.toString()+ TabletTypes.G.toString(), FirebrainZones.Y);
-		relConnZones.put(TabletTypes.G.toString()+ TabletTypes.R.toString(), FirebrainZones.Y);
-		relConnZones.put(TabletTypes.G.toString()+ TabletTypes.B.toString(), FirebrainZones.C);
-		relConnZones.put(TabletTypes.B.toString()+ TabletTypes.G.toString(), FirebrainZones.C);
-		relConnZones.put(TabletTypes.B.toString()+ TabletTypes.R.toString(), FirebrainZones.P);
-		relConnZones.put(TabletTypes.R.toString()+ TabletTypes.B.toString(), FirebrainZones.P);
-		return relConnZones;
-	}
 	
-	public void sendData(char[] msg) {
+	private void sendData(char[] msg) {
 		try {
 			// Sends data
 			fbOut.write(msg);
