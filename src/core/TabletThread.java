@@ -7,14 +7,15 @@ import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
 
+import log.Logger;
+import printer.PrinterManager;
+import serialization.MessageFromTablet;
+import serialization.MessageToTablet;
+
 import com.google.gson.Gson;
 
 import enums.TabletActions;
 import enums.TabletTypes;
-
-import log.Logger;
-import serialization.MessageFromTablet;
-import serialization.MessageToTablet;
 
 /**
  * Thread that has a socket associated and controls its inputs and outputs.
@@ -35,7 +36,7 @@ public class TabletThread implements Runnable {
 	private StringBuffer sb = null;
 	private OnThreadQuery listener;
 	private TabletTypes idTablet = null;
-
+	
 	public TabletThread(Socket socket) {
 		this.tabletSocket = socket;
 		log = Logger.getInstance();

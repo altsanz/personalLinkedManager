@@ -4,6 +4,8 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.HashMap;
 
+import printer.PrinterManager;
+
 import dataBase.IniciFrasesDB;
 
 import enums.TabletActions;
@@ -21,11 +23,13 @@ public class OptimizedLinkedManager implements OnThreadQuery {
 	private Logger log = null;
 	private HashMap<TabletTypes, InfoTablet> relTabletInfo;
 	private IniciFrasesDB iniciFrasesDB = null;
+	private PrinterManager printerManager = null;
 
 	public OptimizedLinkedManager() {
 		// Inicializamos el objeto para hacer el log.
 		log = Logger.getInstance();
 		log.log("Arranque del programa.");
+		printerManager = new PrinterManager();
 
 	}
 
@@ -34,6 +38,7 @@ public class OptimizedLinkedManager implements OnThreadQuery {
 		ServerSocket serverSocket = null;
 		TabletThread tAux = null;
 		initRelTabletInfo();
+		printerManager.cfgPrinters();
 		iniciFrasesDB = new IniciFrasesDB("iniciFrasesDB.txt");
 		try {
 			serverSocket = new ServerSocket(PORT);
@@ -181,12 +186,14 @@ public class OptimizedLinkedManager implements OnThreadQuery {
 				log.log("Main - Datos de tablet "
 						+ messageFromTabletAux.getColor()
 						+ " actualizados. Estado FINISHING.");
+
+				printerManager.requestedPrint(messageFromTabletAux.getColor(), messageFromTabletAux.getIniciFrase(), messageFromTabletAux.getFinalFrase());
 				log.log("Main - La frase finalizada por "
 						+ messageFromTabletAux.getColor()
 						+ " es "
-						+ relTabletInfo.get(
-								messageFromTabletAux.getColorSelected())
-								.getIniciFrase() + infoTabletAux.getFiFrase());
+						+ messageFromTabletAux.getIniciFrase() + " " + messageFromTabletAux.getFinalFrase());
+				log.log("Main - Imprimiendo frase completa de "+messageFromTabletAux.getColor());
+
 				break;
 			case ERROR:
 				relTabletInfo.put(messageFromTabletAux.getColor(), null);
