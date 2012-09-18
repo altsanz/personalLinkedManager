@@ -4,6 +4,8 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.HashMap;
 
+import dataBase.IniciFrasesDB;
+
 import enums.TabletActions;
 import enums.TabletStates;
 import enums.TabletTypes;
@@ -15,8 +17,10 @@ import log.Logger;
 
 public class OptimizedLinkedManager implements OnThreadQuery {
 	private static final int PORT = 12347;
+	private static final int NUM_INICI_FRASES_SP = 4;
 	private Logger log = null;
 	private HashMap<TabletTypes, InfoTablet> relTabletInfo;
+	private IniciFrasesDB iniciFrasesDB = null;
 
 	public OptimizedLinkedManager() {
 		// Inicializamos el objeto para hacer el log.
@@ -30,6 +34,7 @@ public class OptimizedLinkedManager implements OnThreadQuery {
 		ServerSocket serverSocket = null;
 		TabletThread tAux = null;
 		initRelTabletInfo();
+		iniciFrasesDB = new IniciFrasesDB("iniciFrasesDB.txt");
 		try {
 			serverSocket = new ServerSocket(PORT);
 			while (true) {
@@ -66,7 +71,6 @@ public class OptimizedLinkedManager implements OnThreadQuery {
 		try {
 			InfoTablet infoTabletAux = null;
 			MessageToTablet messageToTabletAux = new MessageToTablet();
-			// TODO
 			switch (messageFromTabletAux.getAction()) {
 			case IDENTIFICAR:
 				log.log("Main - Recibido un "
@@ -140,7 +144,9 @@ public class OptimizedLinkedManager implements OnThreadQuery {
 					log.log("Main - La tablet "
 							+ messageFromTabletAux.getColor()
 							+ " juega en modo Singleplayer");
-					// TODO Rellena paquete con frases de BBDD
+					messageToTabletAux.setFrasesBlanc(iniciFrasesDB.getRandomIniciFrases(NUM_INICI_FRASES_SP));
+					messageToTabletAux.setNumberOfPlayers(1);
+					relTabletInfo.get(messageFromTabletAux.getColor()).getThread().sendData(messageToTabletAux);
 				} else {
 					messageToTabletAux.addFrases(
 							messageFromTabletAux.getColor(),
@@ -156,13 +162,12 @@ public class OptimizedLinkedManager implements OnThreadQuery {
 							log.log("Main - Haciendo broadcast a " + tablet);
 							relTabletInfo.get(tablet).getThread()
 									.sendData(messageToTabletAux);
-							log.log("Main - Haciendo broadcast de iniciFrase's a "
-									+ tablet);
+							log.log("Main - Broadcast de iniciFrase's a "
+									+ tablet + ": OK!");
 						}
 					}
 				}
 
-				// TODO Falta implementar el log y pegarle un repaso a todo.
 				break;
 			case ENVIAR_COMPLETA:
 				log.log("Main - Tablet " + messageFromTabletAux.getColor()
@@ -185,6 +190,7 @@ public class OptimizedLinkedManager implements OnThreadQuery {
 				break;
 			case ERROR:
 				relTabletInfo.put(messageFromTabletAux.getColor(), null);
+				log.log("Main - El tablet " + messageFromTabletAux.getColor() + " ha sido eliminado por un error.");
 				break;
 			}
 		} catch (Exception e) {
