@@ -184,11 +184,7 @@ public class OptimizedLinkedManager implements OnThreadQuery {
 								.getIniciFrase() + infoTabletAux.getFiFrase());
 				break;
 			case ERROR:
-				// TODO Elimina toda la info de la tablet, para que esté listo
-				// para volver a empezar.
-				// TODO Simplemente borrar tabletInfo a null
-				
-				
+				relTabletInfo.put(messageFromTabletAux.getColor(), null);
 				break;
 			}
 		} catch (Exception e) {
