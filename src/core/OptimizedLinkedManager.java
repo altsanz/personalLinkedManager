@@ -14,6 +14,7 @@ import enums.Services;
 import enums.TabletActions;
 import enums.TabletStates;
 import enums.TabletTypes;
+import firebrain.FirebrainThread;
 
 public class OptimizedLinkedManager implements OnThreadQuery {
 	private static final int PORT = 12347;
@@ -24,6 +25,7 @@ public class OptimizedLinkedManager implements OnThreadQuery {
 	private PrinterManager printerManager = null;
 	private HashMap<Services, Boolean> servicesState = null;
 	private Scanner scanner = null;
+	private FirebrainThread firebrainThread= null;
 
 	public OptimizedLinkedManager() {
 		// Inicializamos el objeto para hacer el log.
@@ -41,7 +43,8 @@ public class OptimizedLinkedManager implements OnThreadQuery {
 		scanner.useDelimiter("\n");
 		initRelTabletInfo();
 		initServicesState();
-		printerManager.cfgPrinters();
+		if(servicesState.get(Services.FIREBRAIN)) initFirebrain();
+		if(servicesState.get(Services.PRINTER)) printerManager.cfgPrinters();
 		iniciFrasesDB = new IniciFrasesDB("iniciFrasesDB.txt");
 		try {
 			serverSocket = new ServerSocket(PORT);
@@ -58,6 +61,12 @@ public class OptimizedLinkedManager implements OnThreadQuery {
 			log.log("Main - Error en el bucle para aceptar conexiones.");
 			log.log(e.getStackTrace());
 		}
+	}
+
+	public void initFirebrain() {
+		// Connect with Firebrain
+		firebrainThread = new FirebrainThread();
+		new Thread(firebrainThread).start();
 	}
 
 	private void initRelTabletInfo() {
@@ -204,14 +213,14 @@ public class OptimizedLinkedManager implements OnThreadQuery {
 						+ messageFromTabletAux.getColor()
 						+ " actualizados. Estado FINISHING.");
 
-				printerManager.requestedPrint(messageFromTabletAux.getColor(),
+				if(servicesState.get(Services.PRINTER)) printerManager.requestedPrint(messageFromTabletAux.getColor(),
 						messageFromTabletAux.getIniciFrase(),
 						messageFromTabletAux.getFinalFrase());
 				log.log("Main - La frase finalizada por "
 						+ messageFromTabletAux.getColor() + " es "
 						+ messageFromTabletAux.getIniciFrase() + " "
 						+ messageFromTabletAux.getFinalFrase());
-				log.log("Main - Imprimiendo frase completa de "
+				if(servicesState.get(Services.PRINTER)) log.log("Main - Imprimiendo frase completa de "
 						+ messageFromTabletAux.getColor());
 
 				break;
