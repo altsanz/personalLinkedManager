@@ -3,19 +3,17 @@ package core;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.HashMap;
+import java.util.Scanner;
 
+import log.Logger;
 import printer.PrinterManager;
-
+import serialization.MessageFromTablet;
+import serialization.MessageToTablet;
 import dataBase.IniciFrasesDB;
-
+import enums.Services;
 import enums.TabletActions;
 import enums.TabletStates;
 import enums.TabletTypes;
-
-import serialization.MessageFromTablet;
-import serialization.MessageToTablet;
-
-import log.Logger;
 
 public class OptimizedLinkedManager implements OnThreadQuery {
 	private static final int PORT = 12347;
@@ -24,6 +22,8 @@ public class OptimizedLinkedManager implements OnThreadQuery {
 	private HashMap<TabletTypes, InfoTablet> relTabletInfo;
 	private IniciFrasesDB iniciFrasesDB = null;
 	private PrinterManager printerManager = null;
+	private HashMap<Services, Boolean> servicesState = null;
+	private Scanner scanner = null;
 
 	public OptimizedLinkedManager() {
 		// Inicializamos el objeto para hacer el log.
@@ -37,7 +37,10 @@ public class OptimizedLinkedManager implements OnThreadQuery {
 		Socket tabletSocket = null;
 		ServerSocket serverSocket = null;
 		TabletThread tAux = null;
+		scanner = new Scanner(System.in);
+		scanner.useDelimiter("\n");
 		initRelTabletInfo();
+		initServicesState();
 		printerManager.cfgPrinters();
 		iniciFrasesDB = new IniciFrasesDB("iniciFrasesDB.txt");
 		try {
@@ -63,6 +66,17 @@ public class OptimizedLinkedManager implements OnThreadQuery {
 			relTabletInfo.put(tabletType, null);
 		}
 		log.log("Main - Relación entre tablets y su info inicializada");
+	}
+
+	public void initServicesState() {
+		servicesState = new HashMap<Services, Boolean>();
+		for (Services service : Services.values()) {
+			System.out.print("Desea activar " + service + "? (s/n)");
+			if (scanner.next().toLowerCase().equals("s"))
+				servicesState.put(service, true);
+			else
+				servicesState.put(service, false);
+		}
 	}
 
 	public static void main(String[] args) {
@@ -107,6 +121,7 @@ public class OptimizedLinkedManager implements OnThreadQuery {
 							+ messageFromTabletAux.getColor()
 							+ " no se ha podido procesar porque no está identificado.");
 				}
+
 				break;
 			case ENVIAR_INICI:
 				log.log("Main - Recibido un "
@@ -149,9 +164,11 @@ public class OptimizedLinkedManager implements OnThreadQuery {
 					log.log("Main - La tablet "
 							+ messageFromTabletAux.getColor()
 							+ " juega en modo Singleplayer");
-					messageToTabletAux.setFrasesBlanc(iniciFrasesDB.getRandomIniciFrases(NUM_INICI_FRASES_SP));
+					messageToTabletAux.setFrasesBlanc(iniciFrasesDB
+							.getRandomIniciFrases(NUM_INICI_FRASES_SP));
 					messageToTabletAux.setNumberOfPlayers(1);
-					relTabletInfo.get(messageFromTabletAux.getColor()).getThread().sendData(messageToTabletAux);
+					relTabletInfo.get(messageFromTabletAux.getColor())
+							.getThread().sendData(messageToTabletAux);
 				} else {
 					messageToTabletAux.addFrases(
 							messageFromTabletAux.getColor(),
@@ -187,17 +204,21 @@ public class OptimizedLinkedManager implements OnThreadQuery {
 						+ messageFromTabletAux.getColor()
 						+ " actualizados. Estado FINISHING.");
 
-				printerManager.requestedPrint(messageFromTabletAux.getColor(), messageFromTabletAux.getIniciFrase(), messageFromTabletAux.getFinalFrase());
+				printerManager.requestedPrint(messageFromTabletAux.getColor(),
+						messageFromTabletAux.getIniciFrase(),
+						messageFromTabletAux.getFinalFrase());
 				log.log("Main - La frase finalizada por "
-						+ messageFromTabletAux.getColor()
-						+ " es "
-						+ messageFromTabletAux.getIniciFrase() + " " + messageFromTabletAux.getFinalFrase());
-				log.log("Main - Imprimiendo frase completa de "+messageFromTabletAux.getColor());
+						+ messageFromTabletAux.getColor() + " es "
+						+ messageFromTabletAux.getIniciFrase() + " "
+						+ messageFromTabletAux.getFinalFrase());
+				log.log("Main - Imprimiendo frase completa de "
+						+ messageFromTabletAux.getColor());
 
 				break;
 			case ERROR:
 				relTabletInfo.put(messageFromTabletAux.getColor(), null);
-				log.log("Main - El tablet " + messageFromTabletAux.getColor() + " ha sido eliminado por un error.");
+				log.log("Main - El tablet " + messageFromTabletAux.getColor()
+						+ " ha sido eliminado por un error.");
 				break;
 			}
 		} catch (Exception e) {
