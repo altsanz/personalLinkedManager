@@ -9,7 +9,8 @@ import java.net.Socket;
 
 import com.google.gson.Gson;
 
-import enums.ReturnStates;
+import enums.TabletActions;
+import enums.TabletTypes;
 
 import log.Logger;
 import serialization.MessageFromTablet;
@@ -33,6 +34,7 @@ public class TabletThread implements Runnable {
 	private char bRecv[] = null;
 	private StringBuffer sb = null;
 	private OnThreadQuery listener;
+	private TabletTypes idTablet = null;
 
 	public TabletThread(Socket socket) {
 		this.tabletSocket = socket;
@@ -56,6 +58,7 @@ public class TabletThread implements Runnable {
 			while (true) {
 				// Reads data
 				messageFromTabletAux = readData(tabletSocket);
+				idTablet = messageFromTabletAux.getColor();
 				// Gives data to the main thread
 				listener.msgPipe(this, messageFromTabletAux);
 			}
@@ -89,17 +92,38 @@ public class TabletThread implements Runnable {
 			}
 			if (numBytesRecv != -1)
 				sb.append(bRecv, 0, numBytesRecv);
+
+		
+			inputLine = sb.toString();
+			log.log("Hijo - Mensaje recibido:\n" + inputLine);
+			// Deserialize the String received
+			messageFromTabletAux = gson.fromJson(inputLine,
+					MessageFromTablet.class);
+			idTablet = messageFromTabletAux.getColor();
+			log.log("Hijo - Mensaje deserializado correctamente:");
+			log.log(messageFromTabletAux.toString());
+			return messageFromTabletAux;
 		} catch (IOException e) {
+			MessageFromTablet byeByeFromTablet = new MessageFromTablet();
+			byeByeFromTablet.setColor(idTablet);
+			byeByeFromTablet.setAction(TabletActions.ERROR);
+			listener.msgPipe(this, byeByeFromTablet);
 			log.log("Hijo - Error en readData()");
 			log.log(e.getStackTrace());
+			try {
+				log.log("Hijo - Cerrando streams/socket.");
+				if (in != null)
+					in.close();
+				if (out != null)
+					out.close();
+				if (tabletSocket != null)
+					tabletSocket.close();
+			} catch (IOException e1) {
+				log.log("Hijo - Error cerrando streams/socket");
+				e1.printStackTrace();
+			}
 		}
-		inputLine = sb.toString();
-		log.log("Hijo - Mensaje recibido:\n" + inputLine);
-		// Deserialize the String received
-		messageFromTabletAux = gson
-				.fromJson(inputLine, MessageFromTablet.class);
-		log.log("Hijo - Mensaje deserializado correctamente.");
-		return messageFromTabletAux;
+		return	messageFromTabletAux;
 	}
 
 	public void sendData(MessageToTablet messageToTablet) {

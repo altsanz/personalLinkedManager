@@ -21,6 +21,10 @@ public class MessageToTablet {
 	private int numberOfPlayers = 0;
 	private List<String> frasesBlanc = null;
 
+	
+	public MessageToTablet() {
+		this.frases = new HashMap<TabletTypes, String>();
+	}
 	public ReturnStates getState() {
 		return state;
 	}
