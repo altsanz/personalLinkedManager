@@ -10,6 +10,7 @@ import printer.PrinterManager;
 import serialization.MessageFromTablet;
 import serialization.MessageToTablet;
 import dataBase.IniciFrasesDB;
+import enums.FireBrainActions;
 import enums.Services;
 import enums.TabletActions;
 import enums.TabletStates;
@@ -25,7 +26,7 @@ public class OptimizedLinkedManager implements OnThreadQuery {
 	private PrinterManager printerManager = null;
 	private HashMap<Services, Boolean> servicesState = null;
 	private Scanner scanner = null;
-	private FirebrainThread firebrainThread= null;
+	private FirebrainThread firebrainThread = null;
 
 	public OptimizedLinkedManager() {
 		// Inicializamos el objeto para hacer el log.
@@ -43,8 +44,10 @@ public class OptimizedLinkedManager implements OnThreadQuery {
 		scanner.useDelimiter("\n");
 		initRelTabletInfo();
 		initServicesState();
-		if(servicesState.get(Services.FIREBRAIN)) initFirebrain();
-		if(servicesState.get(Services.PRINTER)) printerManager.cfgPrinters();
+		if (servicesState.get(Services.FIREBRAIN))
+			initFirebrain();
+		if (servicesState.get(Services.PRINTER))
+			printerManager.cfgPrinters();
 		iniciFrasesDB = new IniciFrasesDB("iniciFrasesDB.txt");
 		try {
 			serverSocket = new ServerSocket(PORT);
@@ -123,6 +126,13 @@ public class OptimizedLinkedManager implements OnThreadQuery {
 							infoTabletAux);
 					log.log("Main - Tablet " + messageFromTabletAux.getColor()
 							+ " ha comenzado a jugar.");
+					if (servicesState.get(Services.FIREBRAIN)) {
+						firebrainThread.sendAction(FireBrainActions.LightsOn,
+								messageFromTabletAux.getColor(), null);
+						log.log("Main - Enciendiendo luces de " + messageFromTabletAux.getColor());
+					}
+
+
 				} else {
 					log.log("Main - WARNING! La acción "
 							+ messageFromTabletAux.getAction()
@@ -213,15 +223,30 @@ public class OptimizedLinkedManager implements OnThreadQuery {
 						+ messageFromTabletAux.getColor()
 						+ " actualizados. Estado FINISHING.");
 
-				if(servicesState.get(Services.PRINTER)) printerManager.requestedPrint(messageFromTabletAux.getColor(),
-						messageFromTabletAux.getIniciFrase(),
-						messageFromTabletAux.getFinalFrase());
+				if (servicesState.get(Services.PRINTER)) {
+					printerManager.requestedPrint(
+							messageFromTabletAux.getColor(),
+							messageFromTabletAux.getIniciFrase(),
+							messageFromTabletAux.getFinalFrase());
+					log.log("Main - Imprimiendo frase completa de "
+							+ messageFromTabletAux.getColor());
+				}
+
 				log.log("Main - La frase finalizada por "
 						+ messageFromTabletAux.getColor() + " es "
 						+ messageFromTabletAux.getIniciFrase() + " "
 						+ messageFromTabletAux.getFinalFrase());
-				if(servicesState.get(Services.PRINTER)) log.log("Main - Imprimiendo frase completa de "
-						+ messageFromTabletAux.getColor());
+				if (servicesState.get(Services.FIREBRAIN)
+						&& messageFromTabletAux.getColorSelected() != null) {
+					firebrainThread.sendAction(
+							FireBrainActions.LightsConnection,
+							messageFromTabletAux.getColor(),
+							messageFromTabletAux.getColorSelected());
+					log.log("Main - Enviando por Firebrain un "
+							+ FireBrainActions.LightsConnection + " entre "
+							+ messageFromTabletAux.getColor() + " y "
+							+ messageFromTabletAux.getColorSelected());
+				}
 
 				break;
 			case ERROR:
