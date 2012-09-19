@@ -9,8 +9,10 @@ import log.Logger;
 import printer.PrinterManager;
 import serialization.MessageFromTablet;
 import serialization.MessageToTablet;
+import twitter.TwitterService;
 import dataBase.IniciFrasesDB;
 import enums.FireBrainActions;
+import enums.ReturnStates;
 import enums.Services;
 import enums.TabletActions;
 import enums.TabletStates;
@@ -27,7 +29,7 @@ public class OptimizedLinkedManager implements OnThreadQuery {
 	private HashMap<Services, Boolean> servicesState = null;
 	private Scanner scanner = null;
 	private FirebrainThread firebrainThread = null;
-
+	private TwitterService twitter = null;
 	public OptimizedLinkedManager() {
 		// Inicializamos el objeto para hacer el log.
 		log = Logger.getInstance();
@@ -48,6 +50,10 @@ public class OptimizedLinkedManager implements OnThreadQuery {
 			initFirebrain();
 		if (servicesState.get(Services.PRINTER))
 			printerManager.cfgPrinters();
+		if (servicesState.get(Services.TWITTER)) {
+			twitter = TwitterService.getInstance();
+			log.log("Main - Twitter inicializado");
+		}
 		iniciFrasesDB = new IniciFrasesDB("iniciFrasesDB.txt");
 		try {
 			serverSocket = new ServerSocket(PORT);
@@ -102,6 +108,7 @@ public class OptimizedLinkedManager implements OnThreadQuery {
 		try {
 			InfoTablet infoTabletAux = null;
 			MessageToTablet messageToTabletAux = new MessageToTablet();
+			messageToTabletAux.setState(ReturnStates.OK);
 			switch (messageFromTabletAux.getAction()) {
 			case IDENTIFICAR:
 				log.log("Main - Recibido un "
@@ -112,6 +119,9 @@ public class OptimizedLinkedManager implements OnThreadQuery {
 				// Lo añadimos a la relación.
 				relTabletInfo.put(messageFromTabletAux.getColor(),
 						infoTabletAux);
+				messageToTabletAux.setAction(TabletActions.IDENTIFICAR);
+				thread.sendData(messageToTabletAux);
+				
 				log.log("Main - Tablet " + messageFromTabletAux.getColor()
 						+ " ha sido identificada con éxito.");
 				break;
@@ -131,6 +141,8 @@ public class OptimizedLinkedManager implements OnThreadQuery {
 								messageFromTabletAux.getColor(), null);
 						log.log("Main - Enciendiendo luces de " + messageFromTabletAux.getColor());
 					}
+					
+					
 
 
 				} else {
@@ -140,6 +152,8 @@ public class OptimizedLinkedManager implements OnThreadQuery {
 							+ messageFromTabletAux.getColor()
 							+ " no se ha podido procesar porque no está identificado.");
 				}
+				messageToTabletAux.setAction(TabletActions.ACTIVAR);
+				thread.sendData(messageToTabletAux);
 
 				break;
 			case ENVIAR_INICI:
@@ -236,6 +250,8 @@ public class OptimizedLinkedManager implements OnThreadQuery {
 						+ messageFromTabletAux.getColor() + " es "
 						+ messageFromTabletAux.getIniciFrase() + " "
 						+ messageFromTabletAux.getFinalFrase());
+				if (servicesState.get(Services.TWITTER))
+					twitter.sendTweet(messageFromTabletAux.getIniciFrase() + messageFromTabletAux.getFinalFrase());
 				if (servicesState.get(Services.FIREBRAIN)
 						&& messageFromTabletAux.getColorSelected() != null) {
 					firebrainThread.sendAction(
@@ -243,20 +259,26 @@ public class OptimizedLinkedManager implements OnThreadQuery {
 							messageFromTabletAux.getColor(),
 							messageFromTabletAux.getColorSelected());
 					log.log("Main - Enviando por Firebrain un "
-							+ FireBrainActions.LightsConnection + " entre "
+							+ FireBrainActions.LightsOn + " de conexión entre "
 							+ messageFromTabletAux.getColor() + " y "
 							+ messageFromTabletAux.getColorSelected());
 				}
-
+				// Retorna un OK
+				messageToTabletAux.setState(ReturnStates.OK);
+				messageToTabletAux.setAction(TabletActions.ENVIAR_COMPLETA);
+				thread.sendData(messageToTabletAux);
 				break;
 			case ERROR:
 				relTabletInfo.put(messageFromTabletAux.getColor(), null);
 				log.log("Main - El tablet " + messageFromTabletAux.getColor()
 						+ " ha sido eliminado por un error.");
 				break;
+			case APAGA_LLUMS:
+				log.log("Main - Apagando luces de " + messageFromTabletAux.getColor());
+				if (servicesState.get(Services.FIREBRAIN)) firebrainThread.sendAction(FireBrainActions.LightsOff, messageFromTabletAux.getColor(), null);
+				break;
 			}
 		} catch (Exception e) {
-			e.printStackTrace();
 			log.log("Main - Error en msgPipe()");
 			log.log(e.getStackTrace());
 		}

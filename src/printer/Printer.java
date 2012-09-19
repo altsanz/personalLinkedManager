@@ -41,8 +41,8 @@ public class Printer implements Printable {
 	int posy2 = 350;
 	int saltoLinia = 20;
 
-	List<String> iniciFraseArray = new LinkedList<String>();
-	List<String> finalFraseArray = new LinkedList<String>();
+	List<String> iniciFraseArray = null;
+	List<String> finalFraseArray = null;
 
 	TabletTypes tablet;
 	PrintService ps;
@@ -51,6 +51,9 @@ public class Printer implements Printable {
 		this.tablet = tablet;
 		this.ps = ps;
 		initPosLists();
+		iniciFraseArray = new LinkedList<String>();
+		finalFraseArray = new LinkedList<String>();
+
 	}
 
 	public Printer() {
@@ -103,9 +106,11 @@ public class Printer implements Printable {
 		System.out.println("Tablet: " + tablet);
 		System.out.println("Inici frase set frases(): \n" + iniciFrase);
 		System.out.println("Final frase set frases(): \n" + finalFrase);
-
-		iniciFraseArray = splitFrases(iniciFrase, iniciFraseArray);
-		finalFraseArray = splitFrases(finalFrase, finalFraseArray);
+		
+		iniciFraseArray = new LinkedList<String>();
+		finalFraseArray = new LinkedList<String>();
+		iniciFraseArray = splitFrases(this.iniciFrase, iniciFraseArray);
+		finalFraseArray = splitFrases(this.finalFrase, finalFraseArray);
 		iniciFraseArray = centerFrases(iniciFraseArray);
 		finalFraseArray = centerFrases(finalFraseArray);
 	}
@@ -170,9 +175,6 @@ public class Printer implements Printable {
 	}
 
 	@Override
-	/**
-	 * FALTA TESTEAR!
-	 */
 	public int print(Graphics g, PageFormat pf, int pagina)
 			throws PrinterException {
 		Graphics2D g2d;

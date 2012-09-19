@@ -8,7 +8,6 @@ import java.io.PrintWriter;
 import java.net.Socket;
 
 import log.Logger;
-import printer.PrinterManager;
 import serialization.MessageFromTablet;
 import serialization.MessageToTablet;
 
@@ -49,6 +48,7 @@ public class TabletThread implements Runnable {
 	@Override
 	public void run() {
 		MessageFromTablet messageFromTabletAux = null;
+		MessageFromTablet lightsOffMessageFromTabletAux = null;
 		gson = new Gson();
 		log.log("Hijo - Thread lanzado con éxito");
 		try {
@@ -59,13 +59,27 @@ public class TabletThread implements Runnable {
 			while (true) {
 				// Reads data
 				messageFromTabletAux = readData(tabletSocket);
-				idTablet = messageFromTabletAux.getColor();
-				// Gives data to the main thread
+				if (messageFromTabletAux == null) break;
 				listener.msgPipe(this, messageFromTabletAux);
+				if (messageFromTabletAux.getAction() == TabletActions.ENVIAR_COMPLETA) {
+					try {
+						log.log("Hijo - Thread " + messageFromTabletAux.getColor() + " se encuentra en Stand By");
+						Thread.sleep(29000);
+					} catch (InterruptedException e) {
+						e.printStackTrace();
+					}
+					lightsOffMessageFromTabletAux = new MessageFromTablet();
+					lightsOffMessageFromTabletAux.setAction(TabletActions.APAGA_LLUMS);
+					lightsOffMessageFromTabletAux.setColor(messageFromTabletAux.getColor());
+					listener.msgPipe(this, lightsOffMessageFromTabletAux);
+				}
+				// Gives data to the main thread
 			}
 
 		} catch (IOException e) {
 			log.log(e.getStackTrace());
+		} catch ( NullPointerException e2 ) {
+			log.log(e2.getStackTrace());
 		}
 	}
 
@@ -93,9 +107,9 @@ public class TabletThread implements Runnable {
 			}
 			if (numBytesRecv != -1)
 				sb.append(bRecv, 0, numBytesRecv);
-
 		
 			inputLine = sb.toString();
+			
 			log.log("Hijo - Mensaje recibido:\n" + inputLine);
 			// Deserialize the String received
 			messageFromTabletAux = gson.fromJson(inputLine,
@@ -122,7 +136,14 @@ public class TabletThread implements Runnable {
 			} catch (IOException e1) {
 				log.log("Hijo - Error cerrando streams/socket");
 				e1.printStackTrace();
+				System.exit(0);
+				return null;
 			}
+			
+		} catch ( NullPointerException e2) {
+			log.log("Hijo - NullPointerException, cerrando socket.");
+			log.log(e2.getStackTrace());
+			return null;
 		}
 		return	messageFromTabletAux;
 	}
@@ -142,6 +163,9 @@ public class TabletThread implements Runnable {
 		} catch (IOException e) {
 			log.log(e.getStackTrace());
 			e.printStackTrace();
+		} catch (NullPointerException e) {
+			log.log("Hijo - NullPointerException");
+			log.log(e.getStackTrace());
 		}
 	}
 }

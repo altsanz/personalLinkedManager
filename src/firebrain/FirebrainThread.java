@@ -2,11 +2,12 @@ package firebrain;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
 import java.util.HashMap;
 import java.util.Map;
+
+import log.Logger;
 
 import com.google.gson.Gson;
 
@@ -38,12 +39,15 @@ public class FirebrainThread extends Thread {
 	Map<String, String> msg = new HashMap<String, String>();
 	Map<String, FirebrainZones> relConnZones = new HashMap<String, FirebrainZones>();
 
+	Logger log = null;
+	
 	public FirebrainThread() {
 	
 	}
 
 	@Override
 	public void run() {
+		log = Logger.getInstance();
 		relConnZones = new HashMap<String, FirebrainZones>();
 		relConnZones.put(TabletTypes.R.toString()+ TabletTypes.G.toString(), FirebrainZones.Y);
 		relConnZones.put(TabletTypes.G.toString()+ TabletTypes.R.toString(), FirebrainZones.Y);
@@ -52,8 +56,8 @@ public class FirebrainThread extends Thread {
 		relConnZones.put(TabletTypes.B.toString()+ TabletTypes.R.toString(), FirebrainZones.P);
 		relConnZones.put(TabletTypes.R.toString()+ TabletTypes.B.toString(), FirebrainZones.P);
 		try {
-			System.out.println("Firebrain socket launched.");
-			fireBrainSocket = new Socket("192.168.0.202", port);
+			log.log("FB - Firebrain socket launched.");
+			fireBrainSocket = new Socket("192.168.0.197", port);
 			fbOut = new BufferedWriter(new PrintWriter(
 					fireBrainSocket.getOutputStream(), true));
 
@@ -97,7 +101,7 @@ public class FirebrainThread extends Thread {
 			msg.put("function", FireBrainActions.LightsAny.toString());
 			break;
 		case LightsConnection:
-			msg.put("function", FireBrainActions.LightsConnection.toString());
+			msg.put("function", FireBrainActions.LightsOn.toString());
 			FirebrainZones connection = relConnZones.get(tabletA.toString()+tabletB.toString());
 			msg.put("zone", connection.toString());
 			break;

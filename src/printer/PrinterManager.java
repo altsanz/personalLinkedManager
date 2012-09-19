@@ -45,7 +45,7 @@ public class PrinterManager {
 		}
 	}
 	
-	public void requestedPrint( TabletTypes tablet, String iniciFrase, String finalFrase ) {
+	public synchronized void requestedPrint( TabletTypes tablet, String iniciFrase, String finalFrase ) {
 		
 		relTabletPrinter.get(tablet).setFrases(iniciFrase, finalFrase);
 		relTabletPrinter.get(tablet).launchPrinting();
