@@ -57,7 +57,7 @@ public class FirebrainThread extends Thread {
 		relConnZones.put(TabletTypes.R.toString()+ TabletTypes.B.toString(), FirebrainZones.P);
 		try {
 			log.log("FB - Firebrain socket launched.");
-			fireBrainSocket = new Socket("192.168.0.197", port);
+			fireBrainSocket = new Socket("127.0.0.1", port);
 			fbOut = new BufferedWriter(new PrintWriter(
 					fireBrainSocket.getOutputStream(), true));
 

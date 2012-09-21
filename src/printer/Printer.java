@@ -103,9 +103,6 @@ public class Printer implements Printable {
 	public void setFrases(String iniciFrase, String finalFrase) {
 		this.iniciFrase = iniciFrase;
 		this.finalFrase = finalFrase;
-		System.out.println("Tablet: " + tablet);
-		System.out.println("Inici frase set frases(): \n" + iniciFrase);
-		System.out.println("Final frase set frases(): \n" + finalFrase);
 		
 		iniciFraseArray = new LinkedList<String>();
 		finalFraseArray = new LinkedList<String>();
@@ -181,7 +178,7 @@ public class Printer implements Printable {
 		if (pagina == 0) {
 			g2d = (Graphics2D) g;
 			g2d.setColor(Color.black);
-			Font font = new Font("Arial", Font.PLAIN, 10);
+			Font font = new Font("Liberation Mono", Font.PLAIN, 10);
 			g2d.setFont(font);
 			g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING,
 					RenderingHints.VALUE_ANTIALIAS_ON);
