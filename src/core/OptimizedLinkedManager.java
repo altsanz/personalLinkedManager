@@ -202,12 +202,14 @@ public class OptimizedLinkedManager implements OnThreadQuery {
 					messageToTabletAux.setNumberOfPlayers(1);
 					relTabletInfo.get(messageFromTabletAux.getColor())
 							.getThread().sendData(messageToTabletAux);
+					iniciFrasesDB.addIniciFraseToDB(relTabletInfo.get(messageFromTabletAux.getColor()).getIniciFrase());
+
 				} else {
 					messageToTabletAux.addFrases(
 							messageFromTabletAux.getColor(),
 							messageFromTabletAux.getIniciFrase());
 					messageToTabletAux.setNumberOfPlayers(messageToTabletAux
-							.getFrases().size() + 1);
+							.getFrases().size());
 					log.log("Main - Mensaje para hacer broadcast de iniciFrase's:");
 					log.log(messageToTabletAux.toString());
 					for (TabletTypes tablet : messageToTabletAux.getFrases()
@@ -251,7 +253,7 @@ public class OptimizedLinkedManager implements OnThreadQuery {
 						+ messageFromTabletAux.getIniciFrase() + " "
 						+ messageFromTabletAux.getFinalFrase());
 				if (servicesState.get(Services.TWITTER))
-					twitter.sendTweet(messageFromTabletAux.getIniciFrase() + messageFromTabletAux.getFinalFrase());
+					twitter.sendTweet(messageFromTabletAux.getIniciFrase() + " " + messageFromTabletAux.getFinalFrase());
 				if (servicesState.get(Services.FIREBRAIN)
 						&& messageFromTabletAux.getColorSelected() != null) {
 					firebrainThread.sendAction(

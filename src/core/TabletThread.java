@@ -26,6 +26,8 @@ public class TabletThread implements Runnable {
 
 	private static final int BUFFER_LENGTH = 1024;
 
+	private static final long DELAY_BETWEEN_GAMES = 17000;
+
 	private Logger log = null;
 	private Socket tabletSocket = null;
 	private Gson gson = null;
@@ -64,7 +66,7 @@ public class TabletThread implements Runnable {
 				if (messageFromTabletAux.getAction() == TabletActions.ENVIAR_COMPLETA) {
 					try {
 						log.log("Hijo - Thread " + messageFromTabletAux.getColor() + " se encuentra en Stand By");
-						Thread.sleep(29000);
+						Thread.sleep(DELAY_BETWEEN_GAMES);
 					} catch (InterruptedException e) {
 						e.printStackTrace();
 					}
